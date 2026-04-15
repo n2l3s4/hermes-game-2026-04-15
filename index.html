@@ -86,15 +86,14 @@ function playTone(freq, type, duration, vol=0.2, when=0) {
 
 function playNoteForMonster(id) {
   const notes = {
-    red:    {f: 523, t: 'sine'},    // C5
-    blue:   {f: 659, t: 'triangle'}, // E5
-    green:  {f: 784, t: 'sine'},    // G5
-    yellow: {f: 1047, t: 'triangle'} // C6
+    red:    {f: 523, t: 'sine'},
+    blue:   {f: 659, t: 'triangle'},
+    green:  {f: 784, t: 'sine'},
+    yellow: {f: 1047, t: 'triangle'}
   };
   const n = notes[id];
   if (!n) return;
   playTone(n.f, n.t, 0.35, 0.25);
-  // harmony
   playTone(n.f * 1.5, 'sine', 0.3, 0.08, 0.05);
 }
 
@@ -134,7 +133,7 @@ const TOTAL_ROUNDS = 5;
 let round = 1;
 let pattern = [];
 let playerIndex = 0;
-let gameState = 'start'; // start, show, play, won
+let gameState = 'start';
 let lastT = performance.now();
 let showTimer = 0;
 let showIndex = -1;
@@ -144,10 +143,10 @@ function initMonsters() {
   const cx = W/2, cy = H/2 - 20;
   const r = Math.min(W, H) * 0.28;
   monsters.length = 0;
-  monsters.push({id:'red',    x: cx,       y: cy - r,     color:'#FF6B6B', glow:'#FFB4B4', shape:'circle', emoji:'🎤'});
-  monsters.push({id:'blue',   x: cx + r,   y: cy,         color:'#4D96FF', glow:'#A8D0FF', shape:'square', emoji:'🥁'});
-  monsters.push({id:'green',  x: cx,       y: cy + r,     color:'#6BCB77', glow:'#B4E8BA', shape:'triangle', emoji:'🎸'});
-  monsters.push({id:'yellow', x: cx - r,   y: cy,         color:'#FFD93D', glow:'#FFEC9B', shape:'star', emoji:'🎹'});
+  monsters.push({id:'red',    x: cx,       y: cy - r,     color:'#FF6B6B', glow:'#FFB4B4', shape:'circle', emoji:'🥁'});
+  monsters.push({id:'blue',   x: cx + r,   y: cy,         color:'#4D96FF', glow:'#A8D0FF', shape:'square', emoji:'🎸'});
+  monsters.push({id:'green',  x: cx,       y: cy + r,     color:'#6BCB77', glow:'#B4E8BA', shape:'triangle', emoji:'🎹'});
+  monsters.push({id:'yellow', x: cx - r,   y: cy,         color:'#FFD93D', glow:'#FFEC9B', shape:'star', emoji:'🎺'});
 }
 initMonsters();
 
@@ -212,7 +211,6 @@ function checkMonster(m) {
   } else {
     playErrorSound();
     m.shake = 10;
-    // let them retry the same step
   }
 }
 
@@ -242,16 +240,16 @@ function update(dt) {
 }
 
 function drawMonster(m) {
-  const flashScale = 1 + m.flash * 0.15;
-  const glowSize = 20 + m.flash * 40;
-  const dx = m.shake > 0 ? Math.sin(m.shake * 3) * 6 : 0;
+  const flashScale = 1 + (m.flash || 0) * 0.15;
+  const glowSize = 20 + (m.flash || 0) * 40;
+  const dx = (m.shake || 0) > 0 ? Math.sin((m.shake || 0) * 3) * 6 : 0;
   const x = m.x + dx;
   const y = m.y;
 
   // Glow
   const g = ctx.createRadialGradient(x, y, 10, x, y, 55 + glowSize);
   g.addColorStop(0, m.color);
-  g.addColorStop(0.4, `rgba(${hexToRgb(m.color)}, ${0.3 + m.flash * 0.5})`);
+  g.addColorStop(0.4, `rgba(${hexToRgb(m.color)}, ${0.3 + (m.flash || 0) * 0.5})`);
   g.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(x, y, 55 + glowSize, 0, Math.PI*2); ctx.fill();
@@ -282,8 +280,9 @@ function drawMonster(m) {
   ctx.beginPath(); ctx.arc(x - 14, y - 8, 10, 0, Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.arc(x + 14, y - 8, 10, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#222';
-  ctx.beginPath(); ctx.arc(x - 14 + (m.shake>0?2:0), y - 6, 5, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x + 14 + (m.shake>0?-2:0), y - 6, 5, 0, Math.PI*2); ctx.fill();
+  const shakeOffX = (m.shake || 0) > 0 ? 2 : 0;
+  ctx.beginPath(); ctx.arc(x - 14 + shakeOffX, y - 6, 5, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + 14 - shakeOffX, y - 6, 5, 0, Math.PI*2); ctx.fill();
 
   // Mouth
   ctx.strokeStyle = '#222';
@@ -354,7 +353,9 @@ function draw() {
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px Comic Sans MS, sans-serif';
-  ctx.fillText('🎵 Round ' + round + ' / ' + TOTAL_ROUNDS, W/2, 18);
+  if (gameState !== 'start') {
+    ctx.fillText('🎵 Round ' + round + ' / ' + TOTAL_ROUNDS, W/2, 18);
+  }
 
   if (gameState === 'start') {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
@@ -366,7 +367,7 @@ function draw() {
     ctx.fillText("Bobo's Monster Band!", W/2, H/2 - 40);
     ctx.fillStyle = '#ffe6a7';
     ctx.font = 'bold ' + Math.min(28, W/18) + 'px Comic Sans MS, sans-serif';
-    ctx.fillText('Click anywhere to start! 🎤🥁🎸🎹', W/2, H/2 + 35);
+    ctx.fillText('Click anywhere to start! 🥁🎸🎹🎺', W/2, H/2 + 35);
   } else if (gameState === 'show') {
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(0, 0, W, H);
@@ -374,7 +375,7 @@ function draw() {
     ctx.font = 'bold ' + Math.min(40, W/10) + 'px Comic Sans MS, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Listen... 👂', W/2, H/2);
+    ctx.fillText('Listen... 🎧', W/2, H/2);
   } else if (gameState === 'won') {
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     ctx.fillRect(0, 0, W, H);
@@ -385,7 +386,7 @@ function draw() {
     ctx.fillText('Good Game, Bobo!', W/2, H/2 - 30);
     ctx.fillStyle = '#ffe6a7';
     ctx.font = 'bold ' + Math.min(32, W/16) + 'px Comic Sans MS, sans-serif';
-    ctx.fillText('You are a rock star! 🌟🎸🥁', W/2, H/2 + 50);
+    ctx.fillText('You are a rock star! 🎸🌟', W/2, H/2 + 50);
   }
 }
 
